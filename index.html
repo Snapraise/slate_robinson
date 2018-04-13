@@ -363,7 +363,7 @@ outlined in the &quot;Get a Specific Order&quot; response body section below.</p
 </span></code></pre>
 <p>This endpoint retrieves a specific order.</p>
 <h3 id='http-request-2'>HTTP Request</h3>
-<p><code>GET http://example.com/orders/kittens/&lt;ID&gt;</code></p>
+<p><code>GET http://example.com/api/orders/&lt;ID&gt;</code></p>
 <h3 id='url-parameters'>URL Parameters</h3>
 <table><thead>
 <tr>
@@ -415,7 +415,7 @@ simply not be sent along in the response body.</p>
 <td>UNIX Timestamp associated with the time this order was last updated in any way.</td>
 </tr>
 </tbody></table>
-<h2 id='create-a-new-order'>Create a New Order</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"http://example.com/api/kittens"</span>
+<h2 id='create-a-new-order'>Create a New Order</h2><pre class="highlight shell tab-shell"><code>curl <span class="s2">"http://example.com/api/orders"</span>
   -X POST
   -H <span class="s2">"Authorization: snap_robinson_token"</span>
   -d <span class="s1">'{
