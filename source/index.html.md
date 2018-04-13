@@ -1,17 +1,13 @@
 ---
-title: API Reference
+title: Robinson Integration Documentation
 
 language_tabs: # must be one of https://git.io/vQNgJ
   - shell
-  - ruby
-  - python
-  - javascript
 
 toc_footers:
-  - <a href='#'>Sign Up for a Developer Key</a>
-  - <a href='https://github.com/lord/slate'>Documentation Powered by Slate</a>
 
 includes:
+  - order_status
   - errors
 
 search: true
@@ -19,146 +15,112 @@ search: true
 
 # Introduction
 
-Welcome to the Kittn API! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
+Hello Snap and Robinson team.  The goal of this document is for us to come together
+on a basic systems architecture so that we can get the ball rolling on an integration
+between Snap and Robinson.
 
-We have language bindings in Shell, Ruby, and Python! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.
+This document is to try and help communicate the basic ideas.  Please consider this a
+first draft where everything is up for discussion.  The end goal behind this document
+is to set some expectations so that both Snap and Robinson can work in parallel without
+either one needing a system to be completed, and to minimize the integration overhead
+once we're ready to try this out.
 
-This example API documentation page was created with [Slate](https://github.com/lord/slate). Feel free to edit it and use it as a base for your own API's documentation.
+The ideal end goal of this process will be a working Minimum Viable Product (MVP).
+We don't expect this document to cover everything we'll ever need into the future.  
+We expect that this integration and document will change over time.  What we are aiming
+for is an integration that is as simple as possible for both sides to build out while
+also still meeting our basic integration needs at our current volume.  
+
+
 
 # Authentication
 
 > To authorize, use this code:
 
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-```
-
 ```shell
 # With shell, you can just pass the correct header with each request
 curl "api_endpoint_here"
-  -H "Authorization: meowmeowmeow"
+  -H "Authorization: snap_robinson_token"
 ```
 
-```javascript
-const kittn = require('kittn');
+> Make sure to replace `snap_robinson_token` with your API key.
 
-let api = kittn.authorize('meowmeowmeow');
-```
+API key generation/management is up for discussion.  For an MVP, Snap would be fine with
+a very basic static "secret" API key with the understanding of changing this over time.
 
-> Make sure to replace `meowmeowmeow` with your API key.
+Snap's API integration will pass an API key to all requests in a header that looks like this:
 
-Kittn uses API keys to allow access to the API. You can register a new Kittn API key at our [developer portal](http://example.com/developers).
-
-Kittn expects for the API key to be included in all API requests to the server in a header that looks like the following:
-
-`Authorization: meowmeowmeow`
+`Authorization: snap_robinson_token`
 
 <aside class="notice">
-You must replace <code>meowmeowmeow</code> with your personal API key.
+Snap must replace <code>snap_robinson_token</code> with the agreed upon API key.
 </aside>
 
-# Kittens
+# Webhooks
 
-## Get All Kittens
+To try and prevent high volume polling, Robinson's system should allow for basic webhook-based
+events.  
 
-```ruby
-require 'kittn'
+Snap will provide a URL that Robinson will send a POST request to.  This POST could either be a
+basic event that Snap would parse to determine what type of request must be made; or it could just be
+the body of the "Get a Specific Order" request itself for now. The former is a more extensible
+option that we would eventually need to move towards, while the latter is likely easier to
+implement and saves an extra web request.
 
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get
-```
+Like the API key, this URL could be explicitly provided and not dynamically managed.
 
-```python
-import kittn
 
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get()
-```
+# Robinson Orders
+
+## Get All Robinson Orders
+
 
 ```shell
-curl "http://example.com/api/kittens"
-  -H "Authorization: meowmeowmeow"
+curl "http://example.com/api/orders"
+  -H "Authorization: snap_robinson_token"
 ```
 
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let kittens = api.kittens.get();
-```
 
 > The above command returns JSON structured like this:
 
 ```json
 [
   {
-    "id": 1,
-    "name": "Fluffums",
-    "breed": "calico",
-    "fluffiness": 6,
-    "cuteness": 7
-  },
-  {
     "id": 2,
-    "name": "Max",
-    "breed": "unknown",
-    "fluffiness": 5,
-    "cuteness": 10
+    "snap_id": 2,
+    "status": "shipped",
+    "shipped_at": 1234567890,
+    "shipping_code": "UPS1234567890",
+    "error_code": null,
+    "updated_at": 123456790
   }
 ]
 ```
 
-This endpoint retrieves all kittens.
+This endpoint retrieves all orders.
 
 ### HTTP Request
 
-`GET http://example.com/api/kittens`
+`GET http://example.com/api/orders`
 
 ### Query Parameters
 
 Parameter | Default | Description
 --------- | ------- | -----------
-include_cats | false | If set to true, the result will also include cats.
-available | true | If set to false, the result will include kittens that have already been adopted.
+last_updated_at | false | Requires UNIX Timestamp.  If provided, limits results to orders that have been updated between last_updated_at and current time.
+page | 0 | Used for results pagination; all requests start on page 0 by default
 
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
+### Response Body
 
-## Get a Specific Kitten
+The response body will be an array of objects.  Each object will be of the same format
+outlined in the "Get a Specific Order" response body section below.
 
-```ruby
-require 'kittn'
 
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get(2)
-```
+## Get a Specific Order
 
 ```shell
-curl "http://example.com/api/kittens/2"
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.get(2);
+curl "http://example.com/api/orders/2"
+  -H "Authorization: snap_robinson_token"
 ```
 
 > The above command returns JSON structured like this:
@@ -166,54 +128,76 @@ let max = api.kittens.get(2);
 ```json
 {
   "id": 2,
-  "name": "Max",
-  "breed": "unknown",
-  "fluffiness": 5,
-  "cuteness": 10
+  "snap_id": 2,
+  "status": "shipped",
+  "shipped_at": 1234567890,
+  "shipping_code": "UPS1234567890",
+  "error_info": null,
+  "updated_at": 1234567890
 }
 ```
 
-This endpoint retrieves a specific kitten.
-
-<aside class="warning">Inside HTML code blocks like this one, you can't use Markdown, so use <code>&lt;code&gt;</code> blocks to denote code.</aside>
+This endpoint retrieves a specific order.
 
 ### HTTP Request
 
-`GET http://example.com/kittens/<ID>`
+`GET http://example.com/api/orders/<ID>`
 
 ### URL Parameters
 
 Parameter | Description
 --------- | -----------
-ID | The ID of the kitten to retrieve
+ID | The ID of the order to retrieve
 
-## Delete a Specific Kitten
+### Response Body
 
-```ruby
-require 'kittn'
+In this JSON response, if any of these fields are empty or `null`, they can optionally
+simply not be sent along in the response body.
 
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.delete(2)
-```
+Parameter | Description
+--------- | -----------
+ID | The ID of the order that was retrieved
+Snap ID | The Snap ID that was communicated when the order was created
+Status | Order Status Code; see "Order Status Code" section for more info.
+Shipped At | UNIX Timestamp associated with the time an order was shipped.
+Shipping Code | Parcel Tracking ID for the shipping service used.
+Error Info | If Status is "error", this string shows a brief explanation or error code.
+Updated At | UNIX Timestamp associated with the time this order was last updated in any way.
 
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.delete(2)
-```
+## Create a New Order
 
 ```shell
-curl "http://example.com/api/kittens/2"
-  -X DELETE
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.delete(2);
+curl "http://example.com/api/orders"
+  -X POST
+  -H "Authorization: snap_robinson_token"
+  -d '{
+    "snap_id": 2,
+    "shipping_address": {
+      "name": "Snap Raise",
+      "street1": "939 Westlake Ave N",
+      "street2": "",
+      "city": "Seattle",
+      "state": "WA",
+      "zip": "98109",
+      "country": "USA"
+    },
+    "line_items": [
+      {
+        "snap_item_id": 12345,
+        "snap_sku": "SNAP12345",
+        "size": "M",
+        "quantity": 2,
+        "logo_url": "http://the.image.url/picture.svg"
+      },
+      {
+        "snap_item_id": 54321,
+        "snap_sku": "SNAP54321",
+        "size": "M",
+        "quantity": 2,
+        "logo_url": "http://the.image.url/picture.svg"
+      }
+    ]
+  }'
 ```
 
 > The above command returns JSON structured like this:
@@ -221,19 +205,39 @@ let max = api.kittens.delete(2);
 ```json
 {
   "id": 2,
-  "deleted" : ":("
+  "snap_id": 2,
+  "status": "new",
+  "updated_at": 1234567890
 }
 ```
 
-This endpoint deletes a specific kitten.
+
+This endpoint creates a new order, adding it to Robinson's fulfillment process.
 
 ### HTTP Request
 
-`DELETE http://example.com/kittens/<ID>`
+`POST http://example.com/api/orders`
 
-### URL Parameters
+#### POST Body
 
-Parameter | Description
---------- | -----------
-ID | The ID of the kitten to delete
+Parameter | Req? | Dflt | Description
+----------- | ----- | ------- | -----------
+Snap ID | | | Snap's internal ID for this order.
+Shipping Address | Y | | The shipping address for this order; JSON object
+<span style='float:right'>*Name*</span> | Y | | Recipient full name
+<span style='float:right'>*Street1*</span> | Y | | Recipient street address line 1
+<span style='float:right'>*Street2*</span> | Y | | Recipient street address line 2
+<span style='float:right'>*City*</span> | Y | | Recipient city
+<span style='float:right'>*State*</span> | Y | | Recipient state ( [USPS Standard 2-letter Abbreviation](https://en.wikipedia.org/wiki/List_of_U.S._state_abbreviations#Postal_codes) )
+<span style='float:right'>*Zip*</span> | Y | | Recipient zip code
+<span style='float:right'>*Country*</span> | N | 'USA' | Recipient country
+Line Items | Y | | Line items in the order; Array of JSON Objects
+<span style='float:right'>*Snap Item ID*</span> | Y | | Snap's internal ID for this product
+<span style='float:right'>*Snap SKU*</span> | Y | | Snap's SKU for this product
+<span style='float:right'>*Size*</span> | Y | | Size of the product ordered
+<span style='float:right'>*Quantity*</span> | Y | | Number of products
+<span style='float:right'>*Logo URL*</span> | Y | | URL to the logo design file
 
+### Response Body
+
+The response body of this request will be of the same format outlined in the "Get a Specific Order" response body section below.
